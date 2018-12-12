@@ -16,6 +16,13 @@ do
     echo "  [Forced Delete]";
   fi
 
+  if [[ $output == *"Unknown"* ]]; then
+    echo "Pod "$pod" stuck in Unknown state";
+
+    oc delete pod $pod --force --grace-period=0 -n $1;
+    echo "  [Forced Delete]";
+  fi
+
   if [[ $output == *"Pending"* ]]; then
     echo "Pod "$pod" stuck in Pending";
   
