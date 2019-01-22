@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: BuildConfig
+metadata:
+  creationTimestamp: null
+  name: complexpipeline
+spec:
+  nodeSelector: {}
+  output: {}
+  postCommit: {}
+  resources: {}
+  runPolicy: Serial
+  source:
+    type: None
+  strategy:
+    jenkinsPipelineStrategy:
+      jenkinsfile: "#!groovy\npipeline \n{\n  agent any    \n    \n  stages \n  {\n
+        \   stage('Start the Pipeline') \n    {\n      agent any\n      steps \n      {\n
+        \       echo \"Starting Pipeline....\"\n        sh \"oc whoami\"\n      }\n
+        \   }\n    \n    stage('Build the Nodetest')\n    {\n      steps\n      {\n
+        \       script \n        {\n          openshift.withCluster() \n          {\n
+        \           //openshift.verbose()\n            openshift.withProject('complexpipeline')
+        \n            {\n              echo 'Starting build nodetest...'\n              def
+        targetBuild = openshift.startBuild(\"nodetest\")\n              \n              echo
+        'Waiting for build to be created...'\n                            \n              targetBuild.watch\n
+        \             {\n                return it.count() > 0\n              }\n
+        \                           \n              echo 'Build created..'\n              \n
+        \             targetBuild.watch\n              {\n                if( it.count()
+        == 0 ) \n                {\n                  echo \"No builds are currently
+        active...\"\n                  return false\n                }\n                \n
+        \               def buildComplete = true\n                \n                it.withEach\n
+        \               {\n                  def individualBuild = it.object()\n                                    \n
+        \                 if( it.object().status.phase != \"Complete\" ) buildComplete
+        = false\n                }\n                \n                return buildComplete\n
+        \             } \n              \n              echo \"Build completed...\"\n
+        \           }\n          }\n        }\n      }\n    }\n    \n    stage('Deploy
+        the Nodetest')\n    {\n      steps\n      {\n        script \n        {\n
+        \         openshift.withCluster() \n          {\n            openshift.withProject('complexpipeline')
+        \n            {\n              echo 'Starting deployment of Nodetest'\n              def
+        deploymentConfig = openshift.selector(\"dc\", \"nodetest\")\n                            \n
+        \             def rollout = deploymentConfig.rollout()\n                            \n
+        \             //Rollout latest deployment\n              rollout.latest()\n
+        \                           \n              echo 'Waiting on success/fail
+        of Nodetest'\n              rollout.status()          \n            }\n          }\n
+        \       }\n      }\n    }\n\n    stage('Scale the Nodetest')\n    {\n      steps\n
+        \     {\n        script \n        {\n          openshift.withCluster() \n
+        \         {\n            openshift.withProject('complexpipeline') \n            {\n
+        \             echo 'Getting the Replication Controller for Nodetest'\n              def
+        dc = openshift.selector(\"dc\", \"nodetest\")\n                            \n
+        \             echo 'Scaling the RC for Nodetest'\n              dc.scale(\"--replicas=6\")\n
+        \           }\n          }\n        }\n      }\n    }\n  }\n}\n"
+    type: JenkinsPipeline
+  triggers:
+  - github:
+      secret: secret101
+    type: GitHub
+  - generic:
+      secret: secret101
+    type: Generic
+status:
+  lastVersion: 0
