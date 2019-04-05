@@ -22,4 +22,4 @@ echo "[WAITING FOR PRODUCTION POD TO BE AVAILABLE...]"
 until (oc get pods -n prod1 -l app=prodtest 2>/dev/null | grep Running); do echo -ne "."; sleep 1; done
 echo ""
 
-echo "[CICD DEMO COMPLETE]"
+echo "[CROSS PROJECT PROMOTE DEMO COMPLETE]"
